@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 import torch
 from torch import Tensor
 

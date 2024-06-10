@@ -1,8 +1,8 @@
-from rectangle import Rectangle
+from draw_points import draw_points
 from gen_fractal import generate_fractal
-from draw_points import draw_points, draw_rectangle
+from rectangle import Rectangle
 
-rectangles = [
+rectangles_sierpinski = [
     Rectangle(
         center_x=0.25,
         center_y=0.75,
@@ -27,8 +27,8 @@ rectangles = [
 ]
 
 
-points = generate_fractal(rectangles, seed=0, num_points=100_000)
-draw_points(points, image_width=256, image_height=256, file_path="images/fractal.png")
+points = generate_fractal(rectangles_sierpinski, seed=0, num_points=1_000_000)
+draw_points(points, image_width=1024, image_height=1024, file_path="images/sierpinski.png")
 
-for rectangle, name in zip(rectangles, ["rectangle_1.png", "rectangle_2.png", "rectangle_3.png"]):
-    draw_rectangle(rectangle, image_width=256, image_height=256, file_path=f"images/{name}")
+points = generate_fractal(rectangles_sierpinski, seed=0, num_points=5000)
+draw_points(points, image_width=32, image_height=32, file_path="images/sierpinski_small.png")

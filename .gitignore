@@ -1,0 +1,9 @@
+# IDE
+.vscode
+
+# python
+__pycache__
+
+# conda environment
+.autoenv
+.autoenv.leave

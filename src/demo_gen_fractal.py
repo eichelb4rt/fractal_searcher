@@ -1,6 +1,6 @@
 from rectangle import Rectangle
 from gen_fractal import generate_fractal
-from draw_points import draw_points
+from draw_points import draw_points, draw_rectangle
 
 rectangles = [
     Rectangle(
@@ -26,5 +26,9 @@ rectangles = [
     ),
 ]
 
-points = generate_fractal(rectangles, seed=0, num_points=10_000)
-draw_points(points, image_width=100, image_height=100, file_path="images/fractal.png")
+
+points = generate_fractal(rectangles, seed=0, num_points=100_000)
+draw_points(points, image_width=256, image_height=256, file_path="images/fractal.png")
+
+for rectangle, name in zip(rectangles, ["rectangle_1.png", "rectangle_2.png", "rectangle_3.png"]):
+    draw_rectangle(rectangle, image_width=256, image_height=256, file_path=f"images/{name}")

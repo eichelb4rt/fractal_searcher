@@ -8,13 +8,13 @@ N_HIDDEN_POINTS = 100
 N_POINTS_FOR_PROGRESS_BAR = 100_000
 
 
-def generate_fractal(rectangles: list[Rectangle], num_points: int = 1000, starting_point: Tensor = None, selected_indices: list[int] = None, seed: int = None, show_progress: bool = None) -> Tensor:
+def generate_fractal(function_system: list[tuple[Tensor, Tensor]], num_points: int = 1000, starting_point: Tensor = None, selected_indices: list[int] = None, seed: int = None, show_progress: bool = None) -> Tensor:
     """Generates a list of points that form a fractal. Either provide a seed to determine the starting point and selected indices, or provide the starting point and selected indices directly. If none of these are provided, a seed of 0 is used.
 
     Parameters
     ----------
-    rectangles : list[Rectangle]
-        The iterative function system that defines the fractal. Each rectangle in the list is equivalent to a transformation matrix and an offset.
+    function_system : list[tuple[Tensor, Tensor]]
+        The iterative function system that defines the fractal.
     num_points : int, optional
         Number of points generated, by default 1000
     starting_point : Tensor, optional
@@ -47,16 +47,15 @@ def generate_fractal(rectangles: list[Rectangle], num_points: int = 1000, starti
     if starting_point is None and selected_indices is None:
         torch.manual_seed(seed)
         starting_point = torch.rand(2).to(torch.float32)
-        selected_indices = torch.randint(0, len(rectangles), (num_points,))
+        selected_indices = torch.randint(0, len(function_system), (num_points,))
     # generate the fractal
-    affine_functions = [to_affine_function(rectangle) for rectangle in rectangles]
-    points = torch.empty(num_points, 2, dtype=torch.float32)
+    points = [None] * (num_points + 1)
     points[0] = starting_point
     if show_progress:
         iterator_selected_indices = tqdm(enumerate(selected_indices))
     else:
         iterator_selected_indices = enumerate(selected_indices)
     for i, selected_index in iterator_selected_indices:
-        transformation_matrix, offset = affine_functions[selected_index]
-        points[i] = points[i - 1] @ transformation_matrix.T + offset
-    return points[N_HIDDEN_POINTS:]
+        transformation_matrix, offset = function_system[selected_index]
+        points[i + 1] = points[i] @ transformation_matrix.T + offset
+    return torch.stack(points[N_HIDDEN_POINTS:])

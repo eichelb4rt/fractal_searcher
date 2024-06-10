@@ -1,4 +1,4 @@
-from draw_points import draw_rectangle
+from draw import draw_rectangle
 from rectangle import Rectangle
 
 rectangle = Rectangle(

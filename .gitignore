@@ -4,6 +4,11 @@
 # python
 __pycache__
 
+# cython
+src/compute_image_interface.cpp
+build
+*.so
+
 # conda environment
 .autoenv
 .autoenv.leave

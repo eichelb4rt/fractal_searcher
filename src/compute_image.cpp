@@ -6,7 +6,7 @@ void free_image(Image* image) {
     delete image;
 }
 
-Image* compute_image_c(const unsigned int* filled_pixels, unsigned int n_filled_pixels, unsigned int width, unsigned int height) {
+Image* compute_image_c(const long* filled_pixels, unsigned int n_filled_pixels, unsigned int width, unsigned int height) {
     auto data = (float*) calloc(width * height, sizeof(float));
     for (unsigned int i = 0; i < n_filled_pixels; ++i) {
         unsigned int x = filled_pixels[2 * i];

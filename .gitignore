@@ -6,6 +6,7 @@ __pycache__
 
 # cython
 src/compute_image_interface.cpp
+src/gen_fractal_interface.cpp
 build
 *.so
 

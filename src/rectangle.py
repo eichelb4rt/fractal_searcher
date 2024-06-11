@@ -16,6 +16,7 @@ class Rectangle:
     width: float
     height: float
     angle: float
+    mirror: bool
 
     def __post_init__(self):
         assert 0 <= self.center_x <= 1
@@ -38,6 +39,37 @@ def to_affine_function(rectangle: Rectangle) -> tuple[npt.NDArray[np.float32], n
     # offset for Ap + (b - Ac)
     offset -= transformation_matrix @ UNIT_SQUARE_CENTER
     return transformation_matrix, offset
+
+
+def to_contiguous_affine_function(rectangle: Rectangle) -> npt.NDArray[np.float32]:
+    transformation_matrix, offset = to_affine_function(rectangle)
+    return np.concatenate([transformation_matrix.flatten(), offset])
+
+
+def rectangles_to_vector(rectangles: list[Rectangle]) -> npt.NDArray[np.float32]:
+    return np.array([[rectangle.center_x, rectangle.center_y, rectangle.width, rectangle.height, rectangle.angle] for rectangle in rectangles]).flatten()
+
+
+def vectors_to_rectangles(vectors: npt.NDArray[np.float32]) -> list[Rectangle]:
+    assert len(vectors.shape) == 2, f"vectors must be a 2D array. Current shape: {vectors.shape}"
+    assert vectors.shape[1] == 6
+    return [Rectangle(*vectors[i][:5], vectors[i][5] > 0.5) for i in range(0, vectors.shape[0])]
+
+
+def rectangles_to_function_system(rectangles: list[Rectangle]) -> npt.NDArray[np.float32]:
+    return np.concatenate([to_contiguous_affine_function(rectangle) for rectangle in rectangles])
+
+
+def from_affine_function(transformation_matrix: npt.NDArray[np.float32], offset: npt.NDArray[np.float32]) -> Rectangle:
+    # compute the center of the rectangle
+    center = np.linalg.inv(transformation_matrix) @ offset
+    # compute the width and height of the rectangle
+    width = np.linalg.norm(transformation_matrix[:, 0])
+    height = np.linalg.norm(transformation_matrix[:, 1])
+    # compute the angle of the rectangle
+    angle_radians = np.arctan2(transformation_matrix[1, 0], transformation_matrix[0, 0]) / (2 * np.pi)
+    # create and return the Rectangle object
+    return Rectangle(center[0], center[1], width, height, angle_radians)
 
 
 def main():

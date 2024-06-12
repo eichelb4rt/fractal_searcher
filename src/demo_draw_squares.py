@@ -43,7 +43,7 @@ draw_rectangle(rectangle_2, "images/mapped_2.png")
 #     ),
 # ]
 
-rectangles = [Rectangle(center_x=0.43331647, center_y=0.3955077, width=0.52147627, height=0.46386707, rotate_angle=0.66796845), Rectangle(center_x=0.34994644, center_y=0.8730466, width=0.5898434, height=0.5004258, rotate_angle=0.3173819), Rectangle(center_x=0.79011494, center_y=0.8679324, width=0.5420968, height=0.53437376, rotate_angle=0.33699903)]
+rectangles = [Rectangle(center_x=0.25112194, center_y=0.74369967, width=0.50011814, height=0.51339436, rotate_angle=1.0), Rectangle(center_x=0.6824844, center_y=0.86980325, width=0.60112315, height=0.45811594, rotate_angle=0.6686232), Rectangle(center_x=0.4944999, center_y=0.25298727, width=0.5047151, height=0.49528512, rotate_angle=0.9975586)]
 
 for rectangle, name in zip(rectangles, ["rectangle_1.png", "rectangle_2.png", "rectangle_3.png"]):
     draw_rectangle(rectangle, f"images/{name}")

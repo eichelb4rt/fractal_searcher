@@ -14,9 +14,9 @@ from gradients import gradient_descent, greedy_descent, greedy_descent_2
 from rectangle import Rectangle, rectangles_to_function_system, rectangle_to_contiguous_affine_function, rectangles_to_vector, vectors_to_function_system, vectors_to_rectangles
 from find_fractal import error
 
-SUBSAMPLE_SIZE = 64
+SUBSAMPLE_SIZE = 256
 NUM_STEPS = 800
-LEARNING_RATE = 5e-2
+LEARNING_RATE = 2e-2
 GRADIENT_APPROXIMATION_EPSILON = 1e-2
 GREEDY_STEP_SIZE = 1e-2
 N_RUNS = 20
@@ -45,7 +45,7 @@ objective_function = lambda rectangles_param_vector: error(rectangles_param_vect
 np.random.seed(0)
 param_vector_size = 5 * n_rectangles
 # initial_param_vectors = np.random.uniform(0, 1, N_RUNS * param_vector_size).reshape((N_RUNS, param_vector_size)).astype(np.float32)
-old_top_rectangles = [Rectangle(center_x=0.43331647, center_y=0.3955077, width=0.52147627, height=0.46386707, rotate_angle=0.66796845), Rectangle(center_x=0.34994644, center_y=0.8730466, width=0.5898434, height=0.5004258, rotate_angle=0.3173819), Rectangle(center_x=0.79011494, center_y=0.8679324, width=0.5420968, height=0.53437376, rotate_angle=0.33699903)]
+old_top_rectangles = [Rectangle(center_x=0.43559211, center_y=0.37553188, width=0.54621595, height=0.45281804, rotate_angle=0.66374946), Rectangle(center_x=0.30484405, center_y=0.8763722, width=0.5664403, height=0.4548299, rotate_angle=0.3348315), Rectangle(center_x=0.8143797, center_y=0.87052804, width=0.5524245, height=0.45184985, rotate_angle=0.3303465)]
 old_top_vector = rectangles_to_vector(old_top_rectangles)
 initial_param_vectors = (np.random.normal(0, STD_STRAY, N_RUNS * param_vector_size).reshape((N_RUNS, param_vector_size)).astype(np.float32) + old_top_vector).clip(0, 1)
 

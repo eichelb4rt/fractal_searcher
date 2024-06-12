@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from compute_image_interface import compute_image
 from gen_fractal import generate_fractal
-from rectangle import Rectangle, to_affine_function, to_contiguous_affine_function
+from rectangle import Rectangle, to_affine_function, rectangle_to_contiguous_affine_function, vector_to_contiguous_affine_function, vectors_to_function_system
 from draw import draw_image, draw_points
 from gradients import gradient_descent
 
@@ -17,8 +17,9 @@ DEFAULT_LEARNING_RATE = 1e-2
 DEFAULT_GRADIENT_APPROXIMATION_EPSILON = 1e-1
 
 
-def error(function_system: npt.NDArray[np.float32], target_image: npt.NDArray[np.float32], num_points: int, starting_point: npt.NDArray[np.float32], selected_indices: list[int]) -> float:
+def error(rectangles_param_vector: npt.NDArray[np.float32], target_image: npt.NDArray[np.float32], num_points: int, starting_point: npt.NDArray[np.float32], selected_indices: list[int]) -> float:
     # generate the fractal
+    function_system = vectors_to_function_system(rectangles_param_vector)
     points = generate_fractal(function_system, num_points=num_points, starting_point=starting_point, selected_indices=selected_indices)
     # compute the difference to the target image
     image = compute_image(points, target_image.shape[1], target_image.shape[0])
@@ -60,7 +61,7 @@ def main():
     target_image = Image.open(target_file).convert('L')
     target_image = np.array(target_image).astype(np.float32) / 255
     rectangles = find_fractal(target_image, 3)
-    function_system = np.stack([to_contiguous_affine_function(rectangle) for rectangle in rectangles])
+    function_system = np.stack([rectangle_to_contiguous_affine_function(rectangle) for rectangle in rectangles])
     points = generate_fractal(function_system, seed=0, num_points=1_000_000)
     draw_points(points, image_width=target_image.shape[1], image_height=target_image.shape[0], file_path="images/found.png")
     # target = Image.open(target_file).convert('L')

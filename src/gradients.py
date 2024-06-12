@@ -14,9 +14,12 @@ def gradient_approximation(f: Callable, x: npt.NDArray[np.float32], epsilon: flo
     for i in range(x.shape[0]):
         x_plus = x.copy()
         x_plus[i] += epsilon
+        x_plus[i] = np.clip(x_plus[i], 0, 1)
         x_minus = x.copy()
         x_minus[i] -= epsilon
-        gradient[i] = (f(x_plus) - f(x_minus)) / (2 * epsilon)
+        x_minus[i] = np.clip(x_minus[i], 0, 1)
+        actual_step_size = x_plus[i] - x_minus[i]
+        gradient[i] = (f(x_plus) - f(x_minus)) / actual_step_size
     return gradient
 
 
@@ -31,6 +34,7 @@ def gradient_descent(f: Callable, x_start: npt.NDArray[np.float32], learning_rat
     for _ in tqdm(range(num_steps), leave=False) if show_progress else range(num_steps):
         gradient = gradient_approximation(f, x, gradient_approximation_epsilon)
         x -= learning_rate * gradient
+        x = np.clip(x, 0, 1)
         error = f(x)
         if error < best_error:
             best_error = error
@@ -49,8 +53,10 @@ def greedy_descent(f: Callable, x_start: npt.NDArray[np.float32], num_steps: int
         for i in range(x.shape[0]):
             x_plus = x.copy()
             x_plus[i] += step_size
+            x_plus[i] = np.clip(x_plus[i], 0, 1)
             x_minus = x.copy()
             x_minus[i] -= step_size
+            x_minus[i] = np.clip(x_minus[i], 0, 1)
             best_option = np.argmin([f(x_minus), errors[-1], f(x_plus)])
             x[i] = [x_minus[i], x[i], x_plus[i]][best_option]
             errors.append(f(x))

@@ -26,26 +26,13 @@ def error(rectangles_param_vector: npt.NDArray[np.float32], target_image: npt.ND
     return np.mean((image - target_image) ** 2)
 
 
-def find_fractal(target_image: npt.NDArray[np.float32], n_rectangles: int, n_runs: int = DEFAULT_N_RUNS, n_steps: int = DEFAULT_NUM_STEPS, learning_rate: float = DEFAULT_LEARNING_RATE, gradient_descent_epsilon: float = DEFAULT_GRADIENT_APPROXIMATION_EPSILON) -> list[Rectangle]:
-    # half the image size until it the image consists of only 16 pixels in the smallest dimension
-    image_sizes = [(target_image.shape[0] // 2**i, target_image.shape[1] // 2**i) for i in range(int(np.log2(min(target_image.shape))) - 3)][::-1]
-    # make some initial guesses
+def find_fractal(target_image: npt.NDArray[np.float32], n_rectangles: int) -> list[Rectangle]:
+    subsampled_target_image_32 = subsample_image(target_image, 32, 32)
+    subsampled_target_image_64 = subsample_image(target_image, 64, 64)
     np.random.seed(0)
-    x_size = 5 * n_rectangles
-    top_x = np.random.uniform(0, 1, x_size).reshape((x_size)).astype(np.float32).clip(0, 1)
-    for width, height in image_sizes:
-        # subsample the image
-        subsampled_target = subsample_image(target_image, width, height)
-        # set some hyperparameters
-        np.random.seed(0)
-        n_points = N_POINTS_PER_PIXEL * width * height
-        starting_point = np.random.rand(2)
-        selected_indices = np.random.randint(0, n_rectangles, (n_points,))
-        # build the objective function with that fixed seed
-        objective_function = lambda x: error(x, subsampled_target, num_points=n_points, starting_point=starting_point, selected_indices=selected_indices)  # NOSONAR
-        # create a few random starts for the gradient descent
-        top_x, _ = gradient_descent(objective_function, top_x, learning_rate=learning_rate, num_steps=n_steps, gradient_approximation_epsilon=gradient_descent_epsilon)
-    return [Rectangle(*top_x[i:i + 5]) for i in range(0, len(top_x), 5)]
+    starting_point = np.random.rand(2)
+    selected_indices = np.random.randint(0, n_rectangles, (N_POINTS,)).astype(np.uint32)
+    optimizer_1 = lambda initial_param_vectors: gradient_descent(lambda rectangles_param_vector: error(rectangles_param_vector, subsampled_target_image_32, num_points=32 * 32 * N_POINTS_PER_PIXEL, starting_point=np.random.rand(2), selected_indices=np.random.randint(0, n_rectangles, (32 * 32 * N_POINTS_PER_PIXEL,)).astype(np.uint32)), initial_param_vectors, learning_rate=DEFAULT_LEARNING_RATE, num_steps=DEFAULT_NUM_STEPS, gradient_approximation_epsilon=DEFAULT_GRADIENT_APPROXIMATION_EPSILON)
 
 
 def subsample_image(image: npt.NDArray[np.float32], sub_image_width: int, sub_image_height: int) -> npt.NDArray[np.float32]:

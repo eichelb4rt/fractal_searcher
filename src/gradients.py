@@ -43,6 +43,34 @@ def gradient_descent(f: Callable, x_start: npt.NDArray[np.float32], learning_rat
     return best_x, errors
 
 
+def gradient_descent_2(f: Callable, x_start: npt.NDArray[np.float32], initial_step_size: float, max_step_size_tries: float, step_size_decrease: float, expected_gradient_gain: float, num_steps: int = 100, gradient_approximation_epsilon: float = 1e-2, show_progress: bool = False) -> npt.NDArray[np.float32]:
+    """Perform gradient descent with backtracking line search on a scalar function f starting at x_start."""
+
+    x = x_start.copy()
+    best_error = np.inf
+    best_x = x_start.copy()
+    errors = []
+    errors.append(f(x))
+    for _ in tqdm(range(num_steps), leave=False) if show_progress else range(num_steps):
+        step_size = initial_step_size
+        gradient = gradient_approximation(f, x, gradient_approximation_epsilon)
+        walk_direction = - gradient / np.linalg.norm(gradient)
+        for _ in range(max_step_size_tries):
+            x_plus = x + step_size * walk_direction
+            x_plus = np.clip(x_plus, 0, 1)
+            error_plus = f(x_plus)
+            if error_plus < errors[-1] + expected_gradient_gain * step_size * gradient @ walk_direction:
+                break
+            step_size *= step_size_decrease
+        x = x_plus
+        error = f(x)
+        if error < best_error:
+            best_error = error
+            best_x = x.copy()
+        errors.append(error)
+    return best_x, errors
+
+
 def greedy_descent(f: Callable, x_start: npt.NDArray[np.float32], num_steps: int = 100, step_size: float = 1e-2, show_progress: bool = False) -> npt.NDArray[np.float32]:
     """Perform greedy gradient descent on a scalar function f starting at x_start."""
 

@@ -10,22 +10,33 @@ from compute_image_interface import compute_image
 from draw import draw_image, draw_points
 from find_fractal import subsample_image
 from gen_fractal import generate_fractal
-from gradients import gradient_descent, greedy_descent, greedy_descent_2
+from gradients import gradient_descent, gradient_descent_2, greedy_descent, greedy_descent_2
 from rectangle import Rectangle, rectangles_to_function_system, rectangle_to_contiguous_affine_function, rectangles_to_vector, vectors_to_function_system, vectors_to_rectangles
 from find_fractal import error
 
-SUBSAMPLE_SIZE = 64
-NUM_STEPS = 2000
-LEARNING_RATE = 1e-2
-GRADIENT_APPROXIMATION_EPSILON = 1e-3
-GREEDY_STEP_SIZE = 1e-2
-N_RUNS = 32
+SUBSAMPLE_SIZE = 32
+NUM_STEPS = 500
+GRADIENT_APPROXIMATION_EPSILON = 1e-2
+N_RUNS = 24
+USED_METHOD = "gradient_descent"
 
+# gradient_descent parameters
+LEARNING_RATE = 5e-2
+
+# greedy parameters
+GREEDY_STEP_SIZE = 1e-2
+
+# backtracking line search parameters
+INITIAL_STEP_SIZE = 0.1
+MAX_STEP_SIZE_TRIES = 10
+STEP_SIZE_DECREASE = 0.75
+EXPECTED_GRADIENT_GAIN = 0.5
+
+# stray from the original parameters
 STD_STRAY = 1e-1
 
 N_POINTS = 5 * SUBSAMPLE_SIZE * SUBSAMPLE_SIZE
 
-USED_METHOD = "gradient_descent"
 
 
 # read a grayscale image
@@ -44,16 +55,20 @@ objective_function = lambda rectangles_param_vector: error(rectangles_param_vect
 # create a few random starts for the gradient descent
 np.random.seed(0)
 param_vector_size = 5 * n_rectangles
-# initial_param_vectors = np.random.uniform(0, 1, N_RUNS * param_vector_size).reshape((N_RUNS, param_vector_size)).astype(np.float32)
-old_top_rectangles = [Rectangle(center_x=0.18183221, center_y=0.8518872, width=0.5413586, height=0.46516478, rotate_angle=0.6695025), Rectangle(center_x=0.67693424, center_y=0.86053306, width=0.57093024, height=0.46157643, rotate_angle=0.66512793), Rectangle(center_x=0.49311495, center_y=0.24331623, width=0.50257236, height=0.5156987, rotate_angle=1.0)]
-old_top_vector = rectangles_to_vector(old_top_rectangles)
-initial_param_vectors = (np.random.normal(0, STD_STRAY, N_RUNS * param_vector_size).reshape((N_RUNS, param_vector_size)).astype(np.float32) + old_top_vector).clip(0, 1)
+initial_param_vectors = np.random.uniform(0, 1, N_RUNS * param_vector_size).reshape((N_RUNS, param_vector_size)).astype(np.float32)
+# old_top_rectangles = [Rectangle(center_x=0.18183221, center_y=0.8518872, width=0.5413586, height=0.46516478, rotate_angle=0.6695025), Rectangle(center_x=0.67693424, center_y=0.86053306, width=0.57093024, height=0.46157643, rotate_angle=0.66512793), Rectangle(center_x=0.49311495, center_y=0.24331623, width=0.50257236, height=0.5156987, rotate_angle=1.0)]
+# old_top_vector = rectangles_to_vector(old_top_rectangles)
+# initial_param_vectors = (np.random.normal(0, STD_STRAY, N_RUNS * param_vector_size).reshape((N_RUNS, param_vector_size)).astype(np.float32) + old_top_vector).clip(0, 1)
 
 # optimize
 
 
 def gradient_descent_wrapper(initial_param_vector, show_progress):
     return gradient_descent(objective_function, initial_param_vector, learning_rate=LEARNING_RATE, num_steps=NUM_STEPS, gradient_approximation_epsilon=GRADIENT_APPROXIMATION_EPSILON, show_progress=show_progress)
+
+
+def gradient_descent_2_wrapper(initial_param_vector, show_progress):
+    return gradient_descent_2(objective_function, initial_param_vector, initial_step_size=INITIAL_STEP_SIZE, max_step_size_tries=MAX_STEP_SIZE_TRIES, step_size_decrease=STEP_SIZE_DECREASE, expected_gradient_gain=EXPECTED_GRADIENT_GAIN, num_steps=NUM_STEPS, gradient_approximation_epsilon=GRADIENT_APPROXIMATION_EPSILON, show_progress=show_progress)
 
 
 def greedy_descent_wrapper(initial_param_vector, show_progress):
@@ -66,6 +81,7 @@ def greedy_descent_2_wrapper(initial_param_vector, show_progress):
 
 optimization_methods = {
     "gradient_descent": gradient_descent_wrapper,
+    "gradient_descent_2": gradient_descent_2_wrapper,
     "greedy_descent": greedy_descent_wrapper,
     "greedy_descent_2": greedy_descent_2_wrapper
 }
@@ -82,9 +98,10 @@ scores_sorted = [scores[i] for i in ranks]
 for rank, (score, param_vector) in enumerate(zip(scores_sorted, param_vectors_sorted), 1):
     print(f"Top {rank} score: {score}, rectangles: {vectors_to_rectangles(param_vector)}")
 # plot the errors
-y_min = np.min(error_courses)
-y_max = np.quantile(error_courses, 0.99)
-for i, error_course in enumerate(error_courses):
+plotted_courses = error_courses[::4]
+y_min = np.min(plotted_courses)
+y_max = np.quantile(plotted_courses, 0.99)
+for i, error_course in enumerate(plotted_courses):
     plt.plot(error_course, label=f"Run {i}")
 plt.ylim(bottom=y_min, top=y_max)
 plt.title(f"learning rate: {LEARNING_RATE}, num steps: {NUM_STEPS}, epsilon: {GRADIENT_APPROXIMATION_EPSILON}")

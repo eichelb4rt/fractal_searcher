@@ -15,7 +15,7 @@ def generate_fractal(function_system: npt.NDArray[np.float32], num_points: int =
     Parameters
     ----------
     function_system : list[tuple[Tensor, Tensor]]
-        The iterative function system that defines the fractal.
+        The iterative function system that defines the fractal. Shape: (n_rectangles * 6,).
     num_points : int, optional
         Number of points generated, by default 1000
     starting_point : Tensor, optional

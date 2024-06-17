@@ -1,3 +1,5 @@
+from functools import partial
+from multiprocessing import Pool
 import numpy as np
 import numpy.typing as npt
 
@@ -23,7 +25,7 @@ def gradient_approximation(f: Callable, x: npt.NDArray[np.float32], epsilon: flo
     return gradient
 
 
-def gradient_descent(f: Callable, x_start: npt.NDArray[np.float32], learning_rate: float = 1e-2, num_steps: int = 100, gradient_approximation_epsilon: float = 1e-2, show_progress: bool = False) -> npt.NDArray[np.float32]:
+def gradient_descent(f: Callable, x_start: npt.NDArray[np.float32], learning_rate: float = 1e-2, num_steps: int = 100, gradient_approximation_epsilon: float = 1e-2, show_progress: bool = False) -> tuple[npt.NDArray[np.float32], list[float]]:
     """Perform gradient descent on a scalar function f starting at x_start."""
 
     x = x_start.copy()
@@ -112,3 +114,17 @@ def greedy_descent_2(f: Callable, x_start: npt.NDArray[np.float32], num_steps: i
         x = options[best_option]
         errors.append(f(x))
     return x, errors
+
+
+def parallel_gradient_descent(f: Callable, x_starts: list[npt.NDArray[np.float32]], learning_rate: float = 1e-2, num_steps: int = 100, gradient_approximation_epsilon: float = 1e-2, show_progress: bool = False) -> tuple[list[npt.NDArray[np.float32]], list[list[float]], list[float]]:
+    """Does gradient descent on multiple initial points in parallel. Returns a list with the best parameter vectors found and their respective error cources. The list is sorted with the objective function. Also returns the sorted error courses, and the errors of the best parameter vectors."""
+    pool = Pool()
+    gradient_descent_partial = partial(gradient_descent, f, learning_rate=learning_rate, num_steps=num_steps, gradient_approximation_epsilon=gradient_approximation_epsilon, show_progress=show_progress)
+    results = pool.map(gradient_descent_partial, x_starts)
+    param_vectors, error_courses = zip(*results)
+    errors = [f(param_vector) for param_vector in param_vectors]
+    ranks = np.argsort(errors)
+    param_vectors_sorted = [param_vectors[i] for i in ranks]
+    error_courses_sorted = [error_courses[i] for i in ranks]
+    errors_sorted = [errors[i] for i in ranks]
+    return param_vectors_sorted, error_courses_sorted, errors_sorted

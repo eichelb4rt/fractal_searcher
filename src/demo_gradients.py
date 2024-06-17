@@ -1,3 +1,4 @@
+from functools import partial
 from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
@@ -10,7 +11,7 @@ from compute_image_interface import compute_image
 from draw import draw_image, draw_points
 from find_fractal import subsample_image
 from gen_fractal import generate_fractal
-from gradients import gradient_descent, gradient_descent_2, greedy_descent, greedy_descent_2
+from gradients import gradient_descent, gradient_descent_2, greedy_descent, greedy_descent_2, parallel_gradient_descent
 from rectangle import Rectangle, rectangles_to_function_system, rectangle_to_contiguous_affine_function, rectangles_to_vector, vectors_to_function_system, vectors_to_rectangles
 from find_fractal import error
 
@@ -38,7 +39,6 @@ STD_STRAY = 1e-1
 N_POINTS = 5 * SUBSAMPLE_SIZE * SUBSAMPLE_SIZE
 
 
-
 # read a grayscale image
 target_image = Image.open("images/sierpinski.png").convert('L')
 target_image = np.array(target_image).astype(np.float32) / 255
@@ -61,41 +61,11 @@ initial_param_vectors = np.random.uniform(0, 1, N_RUNS * param_vector_size).resh
 # initial_param_vectors = (np.random.normal(0, STD_STRAY, N_RUNS * param_vector_size).reshape((N_RUNS, param_vector_size)).astype(np.float32) + old_top_vector).clip(0, 1)
 
 # optimize
-
-
-def gradient_descent_wrapper(initial_param_vector, show_progress):
-    return gradient_descent(objective_function, initial_param_vector, learning_rate=LEARNING_RATE, num_steps=NUM_STEPS, gradient_approximation_epsilon=GRADIENT_APPROXIMATION_EPSILON, show_progress=show_progress)
-
-
-def gradient_descent_2_wrapper(initial_param_vector, show_progress):
-    return gradient_descent_2(objective_function, initial_param_vector, initial_step_size=INITIAL_STEP_SIZE, max_step_size_tries=MAX_STEP_SIZE_TRIES, step_size_decrease=STEP_SIZE_DECREASE, expected_gradient_gain=EXPECTED_GRADIENT_GAIN, num_steps=NUM_STEPS, gradient_approximation_epsilon=GRADIENT_APPROXIMATION_EPSILON, show_progress=show_progress)
-
-
-def greedy_descent_wrapper(initial_param_vector, show_progress):
-    return greedy_descent(objective_function, initial_param_vector, num_steps=NUM_STEPS, step_size=GREEDY_STEP_SIZE, show_progress=show_progress)
-
-
-def greedy_descent_2_wrapper(initial_param_vector, show_progress):
-    return greedy_descent_2(objective_function, initial_param_vector, num_steps=NUM_STEPS, step_size=GREEDY_STEP_SIZE, show_progress=show_progress)
-
-
-optimization_methods = {
-    "gradient_descent": gradient_descent_wrapper,
-    "gradient_descent_2": gradient_descent_2_wrapper,
-    "greedy_descent": greedy_descent_wrapper,
-    "greedy_descent_2": greedy_descent_2_wrapper
-}
-pool = Pool()
-args = [(initial_param_vector, i == 0) for i, initial_param_vector in enumerate(initial_param_vectors)]
-results = pool.starmap(optimization_methods[USED_METHOD], args)
-# results = [optimization_methods[USED_METHOD](initial_function_system, True) for i, initial_function_system in enumerate(initial_function_systems)]
-param_vectors, error_courses = zip(*results)
+args = [initial_param_vectors[i] for i in range(N_RUNS)]
+objective_function = partial(error, target_image=subsampled_target_image, num_points=N_POINTS, starting_point=starting_point, selected_indices=selected_indices)
+param_vectors, error_courses, scores = parallel_gradient_descent(objective_function, args, learning_rate=LEARNING_RATE, num_steps=NUM_STEPS, gradient_approximation_epsilon=GRADIENT_APPROXIMATION_EPSILON)
 # see what we optimized
-scores = [objective_function(param_vector) for param_vector in param_vectors]
-ranks = np.argsort(scores)
-param_vectors_sorted = [param_vectors[i] for i in ranks]
-scores_sorted = [scores[i] for i in ranks]
-for rank, (score, param_vector) in enumerate(zip(scores_sorted, param_vectors_sorted), 1):
+for rank, (score, param_vector) in enumerate(zip(scores, param_vectors), 1):
     print(f"Top {rank} score: {score}, rectangles: {vectors_to_rectangles(param_vector)}")
 # plot the errors
 plotted_courses = error_courses[::4]
@@ -115,7 +85,7 @@ plt.savefig(f"images/{USED_METHOD}_sierpinski_small_error_n_runs_{N_RUNS}_lr_{LE
 #     draw_image(image, f"images/sierpinski_{subsampled_target_image.shape[0]}x{subsampled_target_image.shape[1]}_small_reconstructed_top_{rank}.png")
 
 # draw the best result in the subsampled resolution
-best_param_vector = param_vectors_sorted[0]
+best_param_vector = param_vectors[0]
 function_system = vectors_to_function_system(best_param_vector)
 points = generate_fractal(function_system, num_points=N_POINTS, starting_point=starting_point, selected_indices=selected_indices)
 draw_points(points, image_width=subsampled_target_image.shape[1], image_height=subsampled_target_image.shape[0], file_path=f"images/sierpinski_reconstructed_small_{SUBSAMPLE_SIZE}x{SUBSAMPLE_SIZE}.png")

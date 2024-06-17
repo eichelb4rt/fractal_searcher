@@ -20,6 +20,11 @@ N_STEPS_32 = 2000
 LEARNING_RATE_32 = 1e-1
 GRADIENT_APPROXIMATION_EPSILON_32 = 1e-2
 
+N_RUNS_FIXED = 32
+N_STEPS_FIXED = 1000
+LEARNING_RATE_FIXED = 1e-2
+GRADIENT_APPROXIMATION_EPSILON_FIXED = 1e-2
+
 N_RUNS_32_2 = 32
 N_STEPS_32_2 = 2000
 LEARNING_RATE_32_2 = 5e-2
@@ -34,6 +39,11 @@ GRADIENT_APPROXIMATION_EPSILON_64 = 1e-3
 STD_STRAY = 1e-1
 
 
+def glue_params(variable_param_vector: npt.NDArray[np.float32], variable_rectangle_index: int, fixed_param_vector: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
+    param_vector_index = 5 * variable_rectangle_index
+    return np.concatenate([fixed_param_vector[:param_vector_index], variable_param_vector, fixed_param_vector[param_vector_index + 5:]])
+
+
 def error(rectangles_param_vector: npt.NDArray[np.float32], target_image: npt.NDArray[np.float32], num_points: int, starting_point: npt.NDArray[np.float32], selected_indices: list[int]) -> float:
     # generate the fractal
     function_system = vectors_to_function_system(rectangles_param_vector)
@@ -41,6 +51,10 @@ def error(rectangles_param_vector: npt.NDArray[np.float32], target_image: npt.ND
     # compute the difference to the target image
     image = compute_image(points, target_image.shape[1], target_image.shape[0])
     return np.mean((image - target_image) ** 2)
+
+
+def fixed_params_error(variable_param_vector: npt.NDArray[np.float32], variable_rectangle_index: int, fixed_param_vector: npt.NDArray[np.float32], target_image: npt.NDArray[np.float32], num_points: int, starting_point: npt.NDArray[np.float32], selected_indices: list[int]) -> float:
+    return error(glue_params(variable_param_vector, variable_rectangle_index, fixed_param_vector), target_image, num_points, starting_point, selected_indices)
 
 
 def find_fractal(target_image: npt.NDArray[np.float32], n_rectangles: int) -> list[Rectangle]:
@@ -64,6 +78,8 @@ def find_fractal(target_image: npt.NDArray[np.float32], n_rectangles: int) -> li
     result_param_vectors_32, _, _ = parallel_gradient_descent(objective_function_32, args_32, learning_rate=LEARNING_RATE_32, num_steps=N_STEPS_32, gradient_approximation_epsilon=GRADIENT_APPROXIMATION_EPSILON_32)
     progress_bar.update()
     progress_bar.set_description("Stage 2: 32x32 finer")
+    # do gradient descent on only 1 rectangle at a time, with all the others fixed
+
     # do it again, starting with the best parameters from the last descent + noise, and with finer learning rate
     best_param_vector_32 = result_param_vectors_32[0]
     initial_param_vectors_32_2 = np.clip(noise_32_2 + best_param_vector_32, 0, 1).astype(np.float32)
@@ -91,10 +107,10 @@ def subsample_image(image: npt.NDArray[np.float32], sub_image_width: int, sub_im
 
 
 def main():
-    target_file = "images/sierpinski.png"
+    target_file = "images/penis_2_balls_binarized.png"
     target_image = Image.open(target_file).convert('L')
     target_image = np.array(target_image).astype(np.float32) / 255
-    rectangles = find_fractal(target_image, 3)
+    rectangles = find_fractal(target_image, 4)
     print(rectangles)
     function_system = np.concatenate([rectangle_to_contiguous_affine_function(rectangle) for rectangle in rectangles])
     points = generate_fractal(function_system, seed=0, num_points=1_000_000)
